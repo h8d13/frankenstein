@@ -5,8 +5,7 @@ ruff-check:
   stage: test
   image: alpine:latest
   before_script:
-    - apk add --no-cache python3 py3-pip
-    - pip install --break-system-packages ruff
+    - apk add --no-cache ruff --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
   script:
     - echo "Running ruff check..."
     - ruff --version

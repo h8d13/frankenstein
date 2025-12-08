@@ -1,18 +1,16 @@
 #!/bin/sh
 #
-# Pre-commit hook to run shellcheck on all .sh files
-# To install: cp .githooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
-# Or run: git config core.hooksPath .githooks
+# Pre-commit hook to run shellcheck and ruff
+# Install: apk add shellcheck ruff --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
-echo "Running shellcheck on shell scripts..."
+set -e
 
-# Find all .sh files and run shellcheck
-find . -type f -name "*.sh" ! -path "*/.git/*" -print0 | while IFS= read -r -d '' file; do
-    if ! shellcheck "$file"; then
-        echo "Shellcheck failed for: $file"
-        exit 1
-    fi
-done
+# Shellcheck
+if command -v shellcheck >/dev/null 2>&1; then
+    find . -type f -name "*.sh" ! -path "*/.git/*" -exec shellcheck {} +
+fi
 
-echo "Shellcheck passed!"
-exit 0
+# Ruff
+if command -v ruff >/dev/null 2>&1; then
+    ruff check .
+fi
