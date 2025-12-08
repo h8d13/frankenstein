@@ -1,10 +1,11 @@
 stages:
   - test
 
-shellcheck:
+shellcheck-job:
   stage: test
   image: koalaman/shellcheck-alpine:stable
   script:
+    - echo "Running shellcheck on all .sh files..."
     - shellcheck --version
     - find . -type f -name "*.sh" -exec shellcheck {} +
-  allow_failure: false
+    - echo "Shellcheck completed successfully!"
