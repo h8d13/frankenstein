@@ -1,13 +1,14 @@
 stages:
   - test
 
-shellcheck-job:
+ruff-check:
   stage: test
   image: alpine:latest
   before_script:
-    - apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community shellcheck
+    - apk add --no-cache python3 py3-pip
+    - pip install --break-system-packages ruff
   script:
-    - echo "Running shellcheck on all .sh files..."
-    - shellcheck --version
-    - find . -type f -name "*.sh" -exec shellcheck {} +
-    - echo "Shellcheck completed successfully!"
+    - echo "Running ruff check..."
+    - ruff --version
+    - ruff check .
+    - echo "Ruff check completed successfully!"
