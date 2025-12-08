@@ -1,0 +1,10 @@
+stages:
+  - test
+
+shellcheck:
+  stage: test
+  image: koalaman/shellcheck-alpine:stable
+  script:
+    - shellcheck --version
+    - find . -type f -name "*.sh" -exec shellcheck {} +
+  allow_failure: false
