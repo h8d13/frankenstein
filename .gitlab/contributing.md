@@ -1,3 +1,0 @@
-# contrib
-
-some useful instructions
