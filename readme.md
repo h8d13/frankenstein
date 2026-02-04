@@ -1,3 +1,0 @@
-# Basura
-
-*"To steal ideas from one person is plagiarism; to steal from many is research."*
