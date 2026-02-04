@@ -1,1 +1,3 @@
-**.gz
+alpinestein/
+alpine-*.img
+__pycache__/
