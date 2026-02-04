@@ -1,4 +1,4 @@
 #!/bin/sh
 d=$(dirname "$0")
 (echo '#!/bin/sh
-sed 1,2d "$0"|zcat|sh -s -- "$@";exit';"$d/minish" "$1"|gzip)>"$1.gz";chmod +x "$1.gz"
+_S="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")";export _S;sed 1,2d "$0"|zcat|sh -s -- "$@";exit';"$d/minish" "$1"|gzip)>"$1.gz";chmod +x "$1.gz"

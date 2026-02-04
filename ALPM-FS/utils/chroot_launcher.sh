@@ -2,7 +2,7 @@
 #HL#utils/chroot_launcher.sh#
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
 ALPF_DIR="$SCRIPT_DIR/../alpinestein"
 ROOT_DIR="$ALPF_DIR/root"
 PRO_D_DIR="$ALPF_DIR/etc/profile.d"
@@ -43,4 +43,4 @@ cp "$MODS_DIR/sway_user.sh" "$ROOT_DIR/mods/sway_user.sh" && chmod +x "$ROOT_DIR
 
 # Enter chroot as login
 echo "[+] Entering Alpine chroot environment..."
-chroot "$ALPF_DIR" /bin/sh -c ". /root/.profile; exec /bin/sh -l"
+chroot "$ALPF_DIR" /bin/sh -c ". /root/.profile; exec /bin/sh -l" </dev/tty

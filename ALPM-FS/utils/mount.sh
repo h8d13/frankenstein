@@ -1,15 +1,15 @@
-#!/bin/bash
+#!/bin/sh
 #HL#utils/mount.sh#
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
 CHROOT="$SCRIPT_DIR/../alpinestein"
 CHROOT_ABS=$(readlink -f "$CHROOT")
 
 echo "[+] Mounting VFS into $CHROOT_ABS..."
 
 # Create necessary directories first
-mkdir -p "$CHROOT"/{dev,proc,sys,run,tmp}
+mkdir -p "$CHROOT/dev" "$CHROOT/proc" "$CHROOT/sys" "$CHROOT/run" "$CHROOT/tmp"
 
 # Safe mount function
 safe_mount() {
@@ -50,7 +50,7 @@ safe_mount "tmpfs" "tmpfs" "$CHROOT/tmp"
 safe_mount "tmpfs" "tmpfs" "$CHROOT/dev" "mode=0755"
 
 # NOW create the subdirectories inside the tmpfs /dev
-mkdir -p "$CHROOT/dev"/{pts,shm}
+mkdir -p "$CHROOT/dev/pts" "$CHROOT/dev/shm"
 
 # Mount the device filesystems
 safe_mount "devpts" "devpts" "$CHROOT/dev/pts" "newinstance,ptmxmode=0666"

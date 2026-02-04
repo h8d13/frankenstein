@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 #HL#utils/unmount.sh#
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
 CHROOT="$SCRIPT_DIR/../alpinestein"
 
 echo "[-] Unmounting VFS from $CHROOT..."

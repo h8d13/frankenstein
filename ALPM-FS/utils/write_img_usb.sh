@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #HL#utils/write_img_usb.sh#
 # Write bootable Alpine image to USB and create data partition
 

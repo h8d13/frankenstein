@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 #HL#utils/install.sh#
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../ALPM-FS.conf"
 
 # Source config if exists

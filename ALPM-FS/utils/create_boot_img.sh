@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #HL#utils/create-bootable-image.sh#
 # Create a bootable Alpine disk image
 
@@ -11,7 +11,7 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
 CHROOT="$SCRIPT_DIR/../alpinestein"
 IMAGE_FILE="${1:-alpine-boot.img}"
 IMAGE_SIZE="${2:-2G}"
