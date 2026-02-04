@@ -1,8 +1,8 @@
 #!/bin/sh
-#HL#utils/create-bootable-image.sh#
+#HL#create_img#
 # Create a bootable Alpine disk image
 
-# ./utils/create_boot_img.sh [image_file] [image_size] [config_file]
+# ./create_img [image_file] [image_size] [config_file]
 
 set -e
 
@@ -12,10 +12,10 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
-CHROOT="$SCRIPT_DIR/../alpinestein"
+CHROOT="$SCRIPT_DIR/ALPM-FS/alpinestein"
 IMAGE_FILE="${1:-alpine-boot.img}"
 IMAGE_SIZE="${2:-2G}"
-CONFIG_FILE="${3:-$SCRIPT_DIR/../ALPM-FS.conf}"
+CONFIG_FILE="${3:-$SCRIPT_DIR/ALPM-FS/ALPM-FS.conf}"
 
 # Source configuration file
 if [ -f "$CONFIG_FILE" ]; then
@@ -54,7 +54,7 @@ if [ -f "$CHROOT/etc/apk/repositories" ]; then
         echo ""
         echo "Rebuilding Alpine base installation..."
         rm -rf "$CHROOT"
-        "$SCRIPT_DIR/install.sh" "$CHROOT"
+        "$SCRIPT_DIR/ALPM-FS/utils/install.sh" "$CHROOT"
 
         echo ""
         echo "Base installation rebuilt. Please run 'sudo ./run.sh private' to apply mods,"
@@ -538,6 +538,6 @@ echo "Image: $IMAGE_FILE Size: $IMAGE_SIZE"
 echo "Boot mode: UEFI : $BOOTLOADER"
 echo "System hostname: $HOSTNAME"
 echo "Root password: $ROOT_PASSWORD"
-echo "You can now use 'sudo ./utils/write_img_usb.sh $IMAGE_FILE /dev/sdb' for example"
+echo "You can now use 'sudo ./write_img $IMAGE_FILE /dev/sdb' for example"
 echo "Then resize part2 to take the full disk space."
 echo ""
