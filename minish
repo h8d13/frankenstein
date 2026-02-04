@@ -1,0 +1,16 @@
+#!/bin/sh
+awk 'NR==1{print;next}
+/<<-?\\?[[:space:]]*['"'"'"]?([A-Za-z_]+)['"'"'"]?/{
+  match($0,/<<-?\\?[[:space:]]*['"'"'"]?([A-Za-z_]+)/);
+  d=substr($0,RSTART,RLENGTH);
+  gsub(/<<-?\\?[[:space:]]*['"'"'"]?/,"",d);
+  gsub(/['"'"'"]/,"",d)
+}
+d{print;if($0==d)d="";next}
+/^[[:space:]]*#/{next}
+/^[[:space:]]*$/{next}
+{gsub(/^[[:space:]]+/,"");gsub(/[[:space:]]+$/,"")
+if(h){printf"%s",h;h=""}
+if(/;[[:space:]]*(then|do)$/||/^(then|do|else|elif)$/||/(\{|\||\|\||&&)$/){h=$0" ";next}
+print}
+END{if(h)print h}' "${1:--}"
