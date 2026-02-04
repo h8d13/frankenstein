@@ -12,7 +12,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
-CHROOT="$SCRIPT_DIR/ALPM-FS/alpinestein"
+CHROOT="/tmp/alpinestein"
 IMAGE_FILE="${1:-alpine-boot.img}"
 IMAGE_SIZE="${2:-2G}"
 CONFIG_FILE="${3:-$SCRIPT_DIR/ALPM-FS/ALPM-FS.conf}"

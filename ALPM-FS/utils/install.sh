@@ -28,39 +28,39 @@ if [ ! -d "$ALPF_DIR" ]; then
     CHECKSUM_URL="${MINIROOTFS_URL}.sha256"
 
     echo "[+] Downloading: $LATEST_FILE"
-    if ! wget "$MINIROOTFS_URL" -O tmp.tar.gz; then
+    if ! wget "$MINIROOTFS_URL" -O /tmp/alpm-dl.tar.gz; then
         echo "Error: Download failed!"
         exit 1
     fi
 
     echo "[+] Downloading checksum..."
-    if ! wget "$CHECKSUM_URL" -O tmp.tar.gz.sha256; then
+    if ! wget "$CHECKSUM_URL" -O /tmp/alpm-dl.tar.gz.sha256; then
         echo "Warning: Checksum download failed, skipping verification"
     else
         echo "[+] Verifying checksum..."
         # Extract expected checksum and verify
-        EXPECTED_SUM=$(cut -d' ' -f1 tmp.tar.gz.sha256)
-        ACTUAL_SUM=$(sha256sum tmp.tar.gz | cut -d' ' -f1)
+        EXPECTED_SUM=$(cut -d' ' -f1 /tmp/alpm-dl.tar.gz.sha256)
+        ACTUAL_SUM=$(sha256sum /tmp/alpm-dl.tar.gz | cut -d' ' -f1)
 
         if [ "$EXPECTED_SUM" != "$ACTUAL_SUM" ]; then
             echo "Error: Checksum verification failed!"
             echo "  Expected: $EXPECTED_SUM"
             echo "  Actual:   $ACTUAL_SUM"
-            rm -f tmp.tar.gz tmp.tar.gz.sha256
+            rm -f /tmp/alpm-dl.tar.gz /tmp/alpm-dl.tar.gz.sha256
             exit 1
         fi
         echo "[+] Checksum verified successfully"
-        rm tmp.tar.gz.sha256
+        rm /tmp/alpm-dl.tar.gz.sha256
     fi
 
     echo "[+] Extracting..."
-    if ! tar xzf tmp.tar.gz -C "$ALPF_DIR"; then
+    if ! tar xzf /tmp/alpm-dl.tar.gz -C "$ALPF_DIR"; then
         echo "Error: Extraction failed!"
-        rm tmp.tar.gz
+        rm /tmp/alpm-dl.tar.gz
         exit 1
     fi
 
-    rm tmp.tar.gz
+    rm /tmp/alpm-dl.tar.gz
     echo "[+] Alpine installation complete."
 else
     echo "[+] Skipping setup/install."

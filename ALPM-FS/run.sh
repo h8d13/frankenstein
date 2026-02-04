@@ -5,7 +5,7 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-ALPF_DIR="alpinestein"
+ALPF_DIR="/tmp/alpinestein"
 
 # Handle --reset flag
 if [ "$1" = "--reset" ]; then

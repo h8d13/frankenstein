@@ -3,7 +3,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
-CHROOT="$SCRIPT_DIR/../alpinestein"
+CHROOT="/tmp/alpinestein"
 
 echo "[-] Unmounting VFS from $CHROOT..."
 
