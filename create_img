@@ -465,11 +465,8 @@ if [ -n "$USER" ]; then
 echo "[*] Setting up Sway desktop..."
 chroot /mnt/alpine-img /bin/sh <<DOTS_CMD
 . /root/.profile || true
-echo "[MOD] Setting up Sway..."
-setup-desktop sway
 
 mkdir -p /home/"$USER"/.config/sway
-
 if [ "$SWAYDOTS_NEEDED" = "yes" ] && [ -n "$SWAYDOTS_REPO" ]; then
     echo "[MOD] Cloning dotfiles from $SWAYDOTS_REPO..."
     git clone --depth 1 "$SWAYDOTS_REPO" /home/"$USER"/.swaydots
