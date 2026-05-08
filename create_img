@@ -458,22 +458,23 @@ tmpfs /tmp tmpfs defaults,nodev,nosuid 0 0
 EOF
 
 if [ -n "$USER" ]; then
-echo "[*] Setting up dotfiles..."
+echo "[*] Setting up Sway desktop..."
 chroot /mnt/alpine-img /bin/sh <<DOTS_CMD
 . /root/.profile || true
 echo "[MOD] Setting up Sway..."
 setup-desktop sway
 
-echo "[MOD] Setting up dotfiles..."
 mkdir -p /home/"$USER"/.config/sway
 
-git clone --depth 1 https://github.com/h8d13/swaydots /home/"$USER"/.swaydots
-cd /home/"$USER"/.swaydots && ./linker.sh "$USER"
-# handoff handles perms
+if [ "$SWAYDOTS_NEEDED" = "yes" ] && [ -n "$SWAYDOTS_REPO" ]; then
+    echo "[MOD] Cloning dotfiles from $SWAYDOTS_REPO..."
+    git clone --depth 1 "$SWAYDOTS_REPO" /home/"$USER"/.swaydots
+    cd /home/"$USER"/.swaydots && ./linker.sh "$USER"
+fi
+
 # Add user to required groups
 echo "[MOD] Adding $USER to groups: input, video, seat, audio..."
 for group in input video seat audio; do
-    # Create group if it doesn't exist
     if ! getent group "\$group" >/dev/null 2>&1; then
         addgroup "\$group"
     fi
