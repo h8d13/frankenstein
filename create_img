@@ -463,10 +463,7 @@ mkdir -p /home/"$USER"/.config/sway
 
 git clone --depth 1 https://github.com/h8d13/swaydots /home/"$USER"/.swaydots
 cd /home/"$USER"/.swaydots && ./linker.sh "$USER"
-
-echo "[MOD] Resetting perms..."
-chown -R "$USER":"$USER" "/home/$USER/"
-
+# handoff handles perms
 # Add user to required groups
 echo "[MOD] Adding $USER to groups: input, video, seat, audio..."
 for group in input video seat audio; do
