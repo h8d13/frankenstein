@@ -1,11 +1,11 @@
 #!/bin/sh
 #HL#utils/install.sh#
 SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/../ALPM-FS.conf"
+CONFIG_FILE="$SCRIPT_DIR/../default.conf"
 
 # Source config if exists
 if [ -f "$CONFIG_FILE" ]; then
-    # shellcheck source=../ALPM-FS.conf
+    # shellcheck source=../default.conf
     # shellcheck disable=SC1091
     . "$CONFIG_FILE"
 fi

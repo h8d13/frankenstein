@@ -28,12 +28,12 @@ fi
 # Cleanup function
 cleanup() {
     echo "[+] Cleaning up..."
-    umount "$MOUNT_POINT/dev/pts" 2>/dev/null || true
-    umount "$MOUNT_POINT/dev" 2>/dev/null || true
-    umount "$MOUNT_POINT/proc" 2>/dev/null || true
-    umount "$MOUNT_POINT/sys" 2>/dev/null || true
-    umount "$MOUNT_POINT" 2>/dev/null || true
-    rmdir "$MOUNT_POINT" 2>/dev/null || true
+    umount "$MOUNT_POINT/dev/pts" || true
+    umount "$MOUNT_POINT/dev" || true
+    umount "$MOUNT_POINT/proc" || true
+    umount "$MOUNT_POINT/sys" || true
+    umount "$MOUNT_POINT" || true
+    rmdir "$MOUNT_POINT" || true
 }
 trap cleanup EXIT
 

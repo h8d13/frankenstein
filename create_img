@@ -15,12 +15,26 @@ SCRIPT_DIR="$(cd "$(dirname "${_S:-$0}")" && pwd)"
 CHROOT="/tmp/alpinestein"
 IMAGE_FILE="${1:-alpine-boot.img}"
 IMAGE_SIZE="${2:-2G}"
-CONFIG_FILE="${3:-$SCRIPT_DIR/ALPM-FS/ALPM-FS.conf}"
+CONFIG_FILE="${3:-$SCRIPT_DIR/ALPM-FS/default.conf}"
+
+# If arg 1 is a block device, write directly to it (no intermediate image).
+# Part2 = 100% of disk, so no post-write resize is needed.
+if [ -b "$IMAGE_FILE" ]; then
+    DIRECT_WRITE=1
+    TARGET_DEV="$IMAGE_FILE"
+    case "$TARGET_DEV" in
+        *nvme*|*mmcblk*|*loop*) PART_PREFIX="p" ;;
+        *) PART_PREFIX="" ;;
+    esac
+else
+    DIRECT_WRITE=0
+    PART_PREFIX="p"
+fi
 
 # Source configuration file
 if [ -f "$CONFIG_FILE" ]; then
     echo "[+] Loading configuration from $CONFIG_FILE"
-    # shellcheck source=../ALPM-FS.conf
+    # shellcheck source=ALPM-FS/default.conf
     # shellcheck disable=SC1091
     . "$CONFIG_FILE"
 else
@@ -32,14 +46,22 @@ echo "==================================="
 echo "Bootable Alpine Image Creator (UEFI)"
 echo "==================================="
 echo ""
-echo "Creating: $IMAGE_FILE"
-echo "Size: $IMAGE_SIZE"
+if [ "$DIRECT_WRITE" = "1" ]; then
+    echo "Target device: $TARGET_DEV (direct write)"
+    echo ""
+    echo "WARNING: This will DESTROY all data on $TARGET_DEV!"
+    echo "Press Ctrl+C to abort, or Enter to continue..."
+    read -r _
+else
+    echo "Creating: $IMAGE_FILE"
+    echo "Size: $IMAGE_SIZE"
+fi
 echo ""
 
 # Check if Alpine base installation exists and has been configured
 if [ ! -f "$CHROOT/sbin/apk" ]; then
     echo "Error: Alpine base installation not found!"
-    echo "Please run: sudo ./run.sh private"
+    echo "Please run: sudo ./ALPM-FS/run.sh private"
     echo "Then exit and run this script again."
     exit 1
 fi
@@ -64,20 +86,36 @@ if [ -f "$CHROOT/etc/apk/repositories" ]; then
 fi
 ############ CHECKS DONE.
 
-# Create disk image
-echo "[1/7] Creating disk image..."
-dd if=/dev/zero of="$IMAGE_FILE" bs=1 count=0 seek="$IMAGE_SIZE" 2>/dev/null
+if [ "$DIRECT_WRITE" = "1" ]; then
+    echo "[1/7] Preparing target device..."
+    umount "${TARGET_DEV}"* || true
+    # Zero first + last 1 MiB to clear primary GPT/MBR and any stale backup
+    # header left by a previous flash of a differently-sized image.
+    DEV_BYTES=$(blockdev --getsize64 "$TARGET_DEV")
+    DEV_MIB=$((DEV_BYTES / 1024 / 1024))
+    dd if=/dev/zero of="$TARGET_DEV" bs=1M count=1 conv=fsync status=none
+    dd if=/dev/zero of="$TARGET_DEV" bs=1M count=1 seek=$((DEV_MIB - 1)) conv=fsync status=none
+    wipefs -a "$TARGET_DEV" || true
+    LOOP_DEV="$TARGET_DEV"
+    echo "[2/7] Skipping loop setup (direct write to $LOOP_DEV)"
+else
+    # Create disk image
+    echo "[1/7] Creating disk image..."
+    dd if=/dev/zero of="$IMAGE_FILE" bs=1 count=0 seek="$IMAGE_SIZE" 2>/dev/null
 
-# Setup loop device
-echo "[2/7] Setting up loop device..."
-LOOP_DEV=$(losetup -f --show "$IMAGE_FILE")
-echo "Loop device: $LOOP_DEV"
+    # Setup loop device
+    echo "[2/7] Setting up loop device..."
+    LOOP_DEV=$(losetup -f --show "$IMAGE_FILE")
+    echo "Loop device: $LOOP_DEV"
+fi
 
 # Cleanup trap in case of cancel or error
 cleanup() {
     echo "Cleaning up..."
     mountpoint -q /mnt/alpine-img 2>/dev/null && umount -R /mnt/alpine-img
-    losetup -d "$LOOP_DEV" 2>/dev/null || true
+    if [ "$DIRECT_WRITE" = "0" ] && [ -n "$LOOP_DEV" ]; then
+        losetup -d "$LOOP_DEV" || true
+    fi
 }
 trap cleanup EXIT
 
@@ -96,8 +134,8 @@ sleep 1
 
 # Format for EFI
 echo "[4/7] Formatting partitions..."
-EFI_PART="${LOOP_DEV}p1"
-PART_DEV="${LOOP_DEV}p2"
+EFI_PART="${LOOP_DEV}${PART_PREFIX}1"
+PART_DEV="${LOOP_DEV}${PART_PREFIX}2"
 mkfs.vfat -F32 "$EFI_PART"
 
 # Format root part
@@ -162,7 +200,7 @@ if [ "$BOOTLOADER" = "refind" ]; then
     if [ "$ENABLE_TESTING" != "yes" ]; then
         echo "Error: rEFInd bootloader requires ENABLE_TESTING=\"yes\""
         echo "rEFInd is only available in the edge/testing repository."
-        echo "Please update ALPM-FS.conf to enable testing repos."
+        echo "Please update default.conf to enable testing repos."
         exit 1
     fi
     echo "[*] Using rEFInd bootloader with with $KERNEL_FLAVOR"
@@ -179,21 +217,15 @@ fi
 # Install packages and bootloader
 echo "[*] Running main chroot script..."
 
-# Skip Alpine kernel package if using custom kernel
-if [ "$USE_CUSTOM_KERNEL" = "yes" ]; then
-    echo "[*] Skipping $KERNEL_FLAVOR package (using custom kernel)"
-    # Remove kernel package from CORE_PACKAGES but keep the rest
-    INSTALL_CORE_PACKAGES="${CORE_PACKAGES//$KERNEL_FLAVOR/}"
-else
-    INSTALL_CORE_PACKAGES="$CORE_PACKAGES"
-fi
-
 chroot /mnt/alpine-img /bin/sh <<CHROOT_CMD
-. /root/.profile 2>/dev/null || true
+. /root/.profile || true
 apk update
+# Bring base (incl. musl) to current before installing new packages,
+# otherwise newly-built binaries can hit "symbol not found" against a stale ld-musl.
+apk upgrade -a
 [ -n "$HW_GROUP_INTEL" ] && apk add intel-ucode
 [ -n "$HW_GROUP_AMD" ] && apk add amd-ucode
-[ -n "$INSTALL_CORE_PACKAGES" ] && apk add $INSTALL_CORE_PACKAGES
+[ -n "$CORE_PACKAGES" ] && apk add $CORE_PACKAGES
 [ -n "$CORE_PACKAGES2" ] && apk add $CORE_PACKAGES2
 apk add $BOOT_PACKAGES
 [ "$BOOTLOADER" = "refind" ] && apk add refind@testing
@@ -207,49 +239,9 @@ apk add $EXTRA_PACKAGES
 [ -n "$GP_GROUP_MESA" ] && apk add $GP_GROUP_MESA
 CHROOT_CMD
 
-# Install custom kernel if enabled
-if [ "$USE_CUSTOM_KERNEL" = "yes" ]; then
-    echo "[*] Installing custom kernel..."
-
-    # Find custom kernel build directory
-    CUSTOM_KERNEL_DIR=$(find "$CUSTOM_KERNEL_BUILD_DIR" -maxdepth 1 -type d -name "linux-*" 2>/dev/null | head -1)
-
-    if [ -z "$CUSTOM_KERNEL_DIR" ] || [ ! -d "$CUSTOM_KERNEL_DIR" ]; then
-        echo "Error: Custom kernel build not found in $CUSTOM_KERNEL_BUILD_DIR"
-        echo "Please build the kernel first: ./comp_kernel.sh"
-        exit 1
-    fi
-
-    CUSTOM_BZIMAGE="$CUSTOM_KERNEL_DIR/arch/x86/boot/bzImage"
-    if [ ! -f "$CUSTOM_BZIMAGE" ]; then
-        echo "Error: Custom kernel bzImage not found at $CUSTOM_BZIMAGE"
-        exit 1
-    fi
-
-    # Get kernel version
-    CUSTOM_KVER=$(make -C "$CUSTOM_KERNEL_DIR" -s kernelrelease 2>/dev/null)
-    echo "[*] Custom kernel version: $CUSTOM_KVER"
-
-    # Copy kernel to EFI partition
-    cp "$CUSTOM_BZIMAGE" "/mnt/alpine-img/efi/vmlinuz-$CUSTOM_KVER"
-
-    # Install kernel modules
-    echo "[*] Installing custom kernel modules..."
-    make -C "$CUSTOM_KERNEL_DIR" INSTALL_MOD_PATH="/mnt/alpine-img" modules_install -j"$(nproc)"
-
-    # Generate initramfs for custom kernel
-    echo "[*] Generating initramfs for custom kernel..."
-    chroot /mnt/alpine-img /bin/sh <<CUSTOM_INITRAMFS
-. /root/.profile 2>/dev/null || true
-mkinitfs -o /efi/initramfs-$CUSTOM_KVER $CUSTOM_KVER
-CUSTOM_INITRAMFS
-
-    echo "[*] Custom kernel installed: vmlinuz-$CUSTOM_KVER"
-fi
-
-# Configure boot services (same for both modes)
+# Configure boot services
 chroot /mnt/alpine-img /bin/sh <<CHROOT_CMD
-. /root/.profile 2>/dev/null || true
+. /root/.profile || true
 
 # Configure boot services
 for service in $SERVICES_SYSINIT; do
@@ -285,20 +277,30 @@ cat > /etc/conf.d/zram-init <<-ZRAMCONF
 	algo0=$ZRAM_ALGO
 ZRAMCONF
 
-# Configure NetworkManager
-mkdir -p /etc/NetworkManager/conf.d
-cat > /etc/NetworkManager/NetworkManager.conf <<-NMCONF
-	[main]
-	dhcp=internal
-	plugins=ifupdown,keyfile
+# Configure iwd (built-in DHCP + IP config; resolvconf manages /etc/resolv.conf)
+mkdir -p /etc/iwd
+cat > /etc/iwd/main.conf <<-IWDCONF
+	[General]
+	EnableNetworkConfiguration=true
 
-	[ifupdown]
-	managed=true
+	[Network]
+	NameResolvingService=resolvconf
+IWDCONF
 
-	[device]
-	wifi.scan-rand-mac-address=yes
-	wifi.backend=wpa_supplicant
-NMCONF
+# NetworkManager alternative (kept for reference):
+# mkdir -p /etc/NetworkManager/conf.d
+# cat > /etc/NetworkManager/NetworkManager.conf <<-NMCONF
+# 	[main]
+# 	dhcp=internal
+# 	plugins=ifupdown,keyfile
+#
+# 	[ifupdown]
+# 	managed=true
+#
+# 	[device]
+# 	wifi.scan-rand-mac-address=yes
+# 	wifi.backend=wpa_supplicant
+# NMCONF
 
 # Configure network interfaces for auto DHCP
 cat > /etc/network/interfaces <<-NETCONF
@@ -389,7 +391,7 @@ if [ "$BOOTLOADER" = "grub" ]; then
 
     # Install GRUB inside chroot
     chroot /mnt/alpine-img /bin/sh <<GRUB_INSTALL
-. /root/.profile 2>/dev/null || true
+. /root/.profile || true
 grub-install --target=x86_64-efi --efi-directory=/efi \
              --boot-directory=/efi --bootloader-id=Alpine \
              --removable --no-nvram --no-floppy \
@@ -505,9 +507,24 @@ echo "$HOSTNAME" > /mnt/alpine-img/etc/hostname
 # Set root password in chroot
 echo "[*] Setting root password..."
 chroot /mnt/alpine-img /bin/sh <<CHROOT_CMD
-. /root/.profile 2>/dev/null || true
+. /root/.profile || true
 echo "root:$ROOT_PASSWORD" | chpasswd
 CHROOT_CMD
+
+# Create unprivileged user with doas (wheel) access, if USER is set
+if [ -n "$USER" ]; then
+    echo "[*] Creating user '$USER' with doas access..."
+    chroot /mnt/alpine-img /bin/sh <<CHROOT_CMD
+. /root/.profile || true
+adduser -D -s /bin/sh "$USER"
+echo "$USER:$USER_PASSWORD" | chpasswd
+addgroup -S wheel || true
+adduser "$USER" wheel
+mkdir -p /etc/doas.d
+echo "permit persist :wheel" > /etc/doas.d/doas.conf
+chmod 0400 /etc/doas.d/doas.conf
+CHROOT_CMD
+fi
 
 # Generate fstab
 echo "[7/7] Generating fstab..."
@@ -531,13 +548,23 @@ umount /mnt/alpine-img
 
 echo ""
 echo "==================================="
-echo "✓ Bootable image created!"
+if [ "$DIRECT_WRITE" = "1" ]; then
+    echo "✓ Bootable USB ready!"
+else
+    echo "✓ Bootable image created!"
+fi
 echo "==================================="
 echo ""
-echo "Image: $IMAGE_FILE Size: $IMAGE_SIZE"
+if [ "$DIRECT_WRITE" = "1" ]; then
+    echo "Target: $TARGET_DEV (part2 sized to full disk)"
+else
+    echo "Image: $IMAGE_FILE Size: $IMAGE_SIZE"
+fi
 echo "Boot mode: UEFI : $BOOTLOADER"
 echo "System hostname: $HOSTNAME"
 echo "Root password: $ROOT_PASSWORD"
-echo "You can now use 'sudo ./write_img $IMAGE_FILE /dev/sdb' for example"
-echo "Then resize part2 to take the full disk space."
+if [ "$DIRECT_WRITE" = "0" ]; then
+    echo "You can now use 'sudo ./write_img $IMAGE_FILE /dev/sdb' for example"
+    echo "Or pass the device directly: 'sudo ./create_img /dev/sdb'"
+fi
 echo ""

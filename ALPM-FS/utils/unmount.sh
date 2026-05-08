@@ -21,10 +21,10 @@ safe_unmount() {
     local path="$1"
     if mountpoint -q "$path" 2>/dev/null; then
         echo "[-] Unmounting: $path"
-        if umount "$path" 2>/dev/null; then
+        if umount "$path"; then
             echo "[-] ✓ Successfully unmounted $path"
-        elif umount -l "$path" 2>/dev/null; then
-            echo "[-] ✓ Lazy unmounted $path"
+        elif umount -l "$path"; then
+            echo "[-] ✓ Lazy unmounted $path (after normal umount failed above)"
         else
             echo "[-] ✗ Failed to unmount $path"
         fi

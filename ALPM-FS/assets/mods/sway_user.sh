@@ -1,5 +1,5 @@
 #!/bin/sh
-# Sway mod - meant to be run as user: installs elogind, and adds to groups
+# Sway mod - meant to be run as root through doas
 # doas
 set -e
 

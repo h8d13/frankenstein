@@ -59,7 +59,7 @@ Type `exit` when you want to leave the chroot.
 
 Transform this chroot environment into a fully bootable Alpine Linux UEFI system!
 
-See `ALPM-FS.conf` **BEFORE** proceeding. [Here](./ALPM-FS.conf)
+See `default.conf` **BEFORE** proceeding. [Here](./default.conf)
 
 ### Create the image
 

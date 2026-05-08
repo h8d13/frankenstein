@@ -58,18 +58,18 @@ safe_mount "tmpfs" "tmpfs" "$CHROOT/dev/shm" "mode=1777"
 
 # Create essential device nodes
 echo "[+] Creating essential device nodes..."
-mknod -m 666 "$CHROOT/dev/null" c 1 3 2>/dev/null || true
-mknod -m 666 "$CHROOT/dev/zero" c 1 5 2>/dev/null || true
-mknod -m 644 "$CHROOT/dev/random" c 1 8 2>/dev/null || true
-mknod -m 644 "$CHROOT/dev/urandom" c 1 9 2>/dev/null || true
-mknod -m 666 "$CHROOT/dev/tty" c 5 0 2>/dev/null || true
-mknod -m 600 "$CHROOT/dev/console" c 5 1 2>/dev/null || true
+mknod -m 666 "$CHROOT/dev/null" c 1 3 || true
+mknod -m 666 "$CHROOT/dev/zero" c 1 5 || true
+mknod -m 644 "$CHROOT/dev/random" c 1 8 || true
+mknod -m 644 "$CHROOT/dev/urandom" c 1 9 || true
+mknod -m 666 "$CHROOT/dev/tty" c 5 0 || true
+mknod -m 600 "$CHROOT/dev/console" c 5 1 || true
 
 # Create symbolic links
-ln -sf /proc/self/fd "$CHROOT/dev/fd" 2>/dev/null || true
-ln -sf /proc/self/fd/0 "$CHROOT/dev/stdin" 2>/dev/null || true
-ln -sf /proc/self/fd/1 "$CHROOT/dev/stdout" 2>/dev/null || true
-ln -sf /proc/self/fd/2 "$CHROOT/dev/stderr" 2>/dev/null || true
-ln -sf /proc/kcore "$CHROOT/dev/core" 2>/dev/null || true
+ln -sf /proc/self/fd "$CHROOT/dev/fd" || true
+ln -sf /proc/self/fd/0 "$CHROOT/dev/stdin" || true
+ln -sf /proc/self/fd/1 "$CHROOT/dev/stdout" || true
+ln -sf /proc/self/fd/2 "$CHROOT/dev/stderr" || true
+ln -sf /proc/kcore "$CHROOT/dev/core" || true
 
 echo "[+] All mounts completed successfully!"
