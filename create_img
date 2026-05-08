@@ -89,12 +89,9 @@ fi
 if [ "$DIRECT_WRITE" = "1" ]; then
     echo "[1/7] Preparing target device..."
     umount "${TARGET_DEV}"* || true
-    # Zero first + last 1 MiB to clear primary GPT/MBR and any stale backup
-    # header left by a previous flash of a differently-sized image.
-    DEV_BYTES=$(blockdev --getsize64 "$TARGET_DEV")
-    DEV_MIB=$((DEV_BYTES / 1024 / 1024))
-    dd if=/dev/zero of="$TARGET_DEV" bs=1M count=1 conv=fsync status=none
-    dd if=/dev/zero of="$TARGET_DEV" bs=1M count=1 seek=$((DEV_MIB - 1)) conv=fsync status=none
+    # Wipe primary + backup GPT and any stale MBR/protective MBR cleanly.
+    # sgdisk knows where the backup header lives; dd cant relocate it.
+    sgdisk --zap-all "$TARGET_DEV"
     wipefs -a "$TARGET_DEV" || true
     LOOP_DEV="$TARGET_DEV"
     echo "[2/7] Skipping loop setup (direct write to $LOOP_DEV)"
@@ -126,6 +123,10 @@ parted -s --align=opt "$LOOP_DEV" mklabel gpt
 parted -s --align=opt "$LOOP_DEV" mkpart primary fat32 1MiB ${EFI_END}MiB
 parted -s --align=opt "$LOOP_DEV" set 1 esp on
 parted -s --align=opt "$LOOP_DEV" mkpart primary "${ROOT_FS_TYPE}" "${EFI_END}MiB" 100%
+
+# Move backup GPT header to actual end of disk so boot-time tools dont warn
+# "headers backup is not at end of disk".
+sgdisk -e "$LOOP_DEV"
 
 # Reload partition table
 echo "[*] Reloading partition table..."

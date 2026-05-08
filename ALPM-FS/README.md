@@ -3,7 +3,7 @@
 
 ## Alpine-Mini Chroot 👻
 
-> Prereqs: Be on a linux system with tar, wget, bash, parted and **assumes x86_64 target.** for EFI stub boot.
+> Prereqs: Be on a linux system with tar, wget, bash, parted, gptfdisk (sgdisk) and **assumes x86_64 target.** for EFI stub boot.
 
 ----
 
@@ -61,40 +61,29 @@ Transform this chroot environment into a fully bootable Alpine Linux UEFI system
 
 See `default.conf` **BEFORE** proceeding. [Here](./default.conf)
 
-### Create the image
+### Build a bootable image OR write directly
 
+`create_img` lives at the repo root and runs in two modes depending on its first arg.
+
+**Image mode** (file you can flash later, e.g. with `dd`):
 ```bash
-sudo ./utils/create_boot_img.sh alpine-boot.img 3G
+sudo ./create_img alpine-boot.img 3G
 ```
-
 > 3GB minus the /efi part size.
 
-This will:
-- Create a GPT/UEFI bootable disk image
-- Install kernel and GRUB2/reFIND EFI stub bootloader
-- Configure boot services, fstab, zram
-- Set up a complete bootable system
-
-### Test with QEMU
-
+**Direct mode** (write straight to a block device, no intermediate image; part2 fills the device, no post-resize needed):
 ```bash
-sudo ./test_qemu.sh
-```
-Test it with chroot: `sudo ./utils/chroot_usb.sh /dev/sdX2`
-
-### Write to USB
-
-> Usually reset the disk partition table just to make sure :) and zero it out if needed.
-
-**Recommended:** Use the helper script to automatically create a data partition:
-```bash
-sudo ./utils/write_img_usb.sh alpine-boot.img /dev/sdX
+sudo ./create_img /dev/sdX
 ```
 
-This will: Write the bootable image to the USB as part2, part1 being `/efi`.
+Either way, this:
+- Wipes any stale GPT/MBR (`sgdisk --zap-all`) on direct write
+- Creates a GPT/UEFI partition table, ESP + root
+- Relocates the GPT backup header to the actual end of disk (`sgdisk -e`) so you dont get the "headers backup is not at end of disk" warning at boot
+- Installs kernel + GRUB2 / rEFInd EFI stub bootloader
+- Configures boot services, fstab, zram
 
 >[!TIP]
-> Finally: using `partitionmanager` I resize the disk for it to take the full USB.
 > **Default credentials:** root / alpine (change after first boot!)
 > Also need to run `apk update && apk upgrade` once you are in.
 
