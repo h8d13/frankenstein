@@ -536,6 +536,10 @@ UUID=$EFI_UUID /efi vfat defaults 0 2
 tmpfs /tmp tmpfs defaults,nodev,nosuid 0 0
 EOF
 
+# Overwrite the host-leaked resolv.conf (used during chroot apk) with the
+# configured fallback nameserver.
+echo "nameserver $DNS_FALLBACK" > /mnt/alpine-img/etc/resolv.conf
+
 # Cleanup
 echo "[*] Unmouting dev/pts/sys/proc..."
 umount /mnt/alpine-img/dev/pts
