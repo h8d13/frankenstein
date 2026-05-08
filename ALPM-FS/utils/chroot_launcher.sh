@@ -32,12 +32,6 @@ cp "$ASS_DIR/config.conf" "$ROOT_DIR/.ashrc"
 chmod +x "$ASS_DIR/profile.sh" && "$ASS_DIR/profile.sh" "$ROOT_DIR"
 cp /etc/resolv.conf "$ALPF_DIR/etc/resolv.conf"
 
-# Setup profile scripts
-cat "$ASS_DIR/issue.ceauron" > "$PRO_D_DIR/logo.sh" && chmod +x "$PRO_D_DIR/logo.sh"
-
-cp "$MODS_DIR/welcome.sh" "$PRO_D_DIR/welcome.sh" && chmod +x "$PRO_D_DIR/welcome.sh"
-cp "$MODS_DIR/version.sh" "$PRO_D_DIR/version.sh" && chmod +x "$PRO_D_DIR/version.sh"
-
 mkdir -p "$ROOT_DIR/mods"
 cp "$MODS_DIR/sway_dots.sh" "$ROOT_DIR/mods/sway_dots.sh" && chmod +x "$ROOT_DIR/mods/sway_dots.sh"
 
