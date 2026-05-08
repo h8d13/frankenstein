@@ -2,3 +2,8 @@ This project replicates my laptop's Alpine x86_64 setup from the 3.3mb mini-root
 
 Mostly using symlinks to Sway configuration files from a git repo.
 This means being able to re-install from scratch in 15 minutes.
+
+Usage:
+
+sudo ./ALPM-FS/run.sh --reset private
+sudo ./create_img /dev/sdX
