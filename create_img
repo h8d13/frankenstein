@@ -259,6 +259,12 @@ if [ "$SOUND_NEEDED" = "yes" ] && [ -n "$SERVICES_DEFAULT_SOUND" ]; then
     done
 fi
 
+# Configure console keymap (read by openrc 'keymaps' service at boot).
+# Sway/X get layout from their own xkb_layout, this is TTY-only.
+cat > /etc/conf.d/keymaps <<-KEYMAPS
+	keymap="$KB_LAYOUT"
+KEYMAPS
+
 # Configure zram for swap
 cat > /etc/conf.d/zram-init <<-ZRAMCONF
 	load_on_start=yes
