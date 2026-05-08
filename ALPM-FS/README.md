@@ -3,7 +3,7 @@
 
 ## Alpine-Mini Chroot 👻
 
-> Prereqs: Be on a linux system with tar, wget, bash, parted, gptfdisk (sgdisk) and **assumes x86_64 target.** for EFI stub boot.
+> Prereqs: Be on a linux system with tar, wget, bash, parted, sgdisk and **assumes x86_64 target.** for EFI stub boot.
 
 ----
 
