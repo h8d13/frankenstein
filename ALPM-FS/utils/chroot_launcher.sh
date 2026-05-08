@@ -32,8 +32,7 @@ cp "$ASS_DIR/config.conf" "$ROOT_DIR/.ashrc"
 chmod +x "$ASS_DIR/profile.sh" && "$ASS_DIR/profile.sh" "$ROOT_DIR"
 cp /etc/resolv.conf "$ALPF_DIR/etc/resolv.conf"
 
-mkdir -p "$ROOT_DIR/mods"
-cp "$MODS_DIR/sway_dots.sh" "$ROOT_DIR/mods/sway_dots.sh" && chmod +x "$ROOT_DIR/mods/sway_dots.sh"
+cp "$MODS_DIR/sway_dots.sh" "$ROOT_DIR/sway_dots.sh" && chmod +x "$ROOT_DIR/sway_dots.sh"
 
 # Enter chroot as login
 echo "[+] Entering Alpine chroot environment..."
