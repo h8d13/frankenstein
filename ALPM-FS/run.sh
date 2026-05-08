@@ -5,6 +5,7 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ALPF_DIR="/tmp/alpinestein"
 
 # Handle --reset flag
@@ -16,11 +17,11 @@ fi
 
 # Install Alpine if needed
 echo "[+] Installing LKFS..."
-chmod +x ./utils/install.sh && ./utils/install.sh "$ALPF_DIR"
+chmod +x "$SCRIPT_DIR/utils/install.sh" && "$SCRIPT_DIR/utils/install.sh" "$ALPF_DIR"
 
 # Launch in isolated mount namespace (cleanup handled inside)
 echo "[+] Creating isolated mount namespace..."
-chmod +x ./utils/chroot_launcher.sh && unshare --mount --propagation "$@" ./utils/chroot_launcher.sh
+chmod +x "$SCRIPT_DIR/utils/chroot_launcher.sh" && unshare --mount --propagation "$@" "$SCRIPT_DIR/utils/chroot_launcher.sh"
 
 #examples see unshare manpage
 #sudo ./run.sh (--reset) shared | slave | private
