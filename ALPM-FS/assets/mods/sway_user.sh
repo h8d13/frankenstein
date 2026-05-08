@@ -5,14 +5,6 @@ set -e
 
 USER="${DOAS_USER:-$1}"
 
-# Install elogind
-echo "[MOD] Installing elogind..."
-apk add elogind
-
-# Enable elogind service
-echo "[MOD] Enabling elogind service..."
-rc-update add elogind boot
-
 echo "[MOD] Setting up Sway..."
 setup-desktop sway
 
