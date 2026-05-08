@@ -122,7 +122,11 @@ EFI_END=$((EFI_SIZE + 1))
 parted -s --align=opt "$LOOP_DEV" mklabel gpt
 parted -s --align=opt "$LOOP_DEV" mkpart primary fat32 1MiB ${EFI_END}MiB
 parted -s --align=opt "$LOOP_DEV" set 1 esp on
-parted -s --align=opt "$LOOP_DEV" mkpart primary "${ROOT_FS_TYPE}" "${EFI_END}MiB" 100%
+# End at -1MiB instead of 100%: parted resolves 100% to last-usable-sector
+# (total - 34, the GPT backup reserve), which is rarely 1MiB-aligned and trips
+# --align=opt's "not properly aligned for best performance" warning. -1MiB
+# rounds to a 1MiB boundary and still leaves room for the backup header.
+parted -s --align=opt -- "$LOOP_DEV" mkpart primary "${ROOT_FS_TYPE}" "${EFI_END}MiB" -1MiB
 
 # Move backup GPT header to actual end of disk so boot-time tools dont warn
 # "headers backup is not at end of disk".
