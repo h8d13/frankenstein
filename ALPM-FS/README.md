@@ -80,7 +80,7 @@ Either way, this:
 - Wipes any stale GPT/MBR (`sgdisk --zap-all`) on direct write
 - Creates a GPT/UEFI partition table, ESP + root
 - Relocates the GPT backup header to the actual end of disk (`sgdisk -e`) so you dont get the "headers backup is not at end of disk" warning at boot
-- Installs kernel + GRUB2 / rEFInd EFI stub bootloader
+- Installs kernel + GRUB2 EFI bootloader
 - Configures boot services, fstab, zram
 
 >[!TIP]
@@ -159,8 +159,6 @@ Also `doas apk add gnome-2048` because always need that at hand.
 #### Boot time
 
 [3.399605] Mounting root: ok. (Grub)
-
-[3.100839] Mounting root: ok. (Refind)
 
 
 #### Reference sizes

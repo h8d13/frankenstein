@@ -196,24 +196,8 @@ if [ "$ENABLE_TESTING" = "yes" ]; then
     echo "@testing ${ALPINE_MIRROR}/edge/testing" >> /mnt/alpine-img/etc/apk/repositories
 fi
 
-# Validate bootloader configuration and install packages
-if [ "$BOOTLOADER" = "refind" ]; then
-    if [ "$ENABLE_TESTING" != "yes" ]; then
-        echo "Error: rEFInd bootloader requires ENABLE_TESTING=\"yes\""
-        echo "rEFInd is only available in the edge/testing repository."
-        echo "Please update default.conf to enable testing repos."
-        exit 1
-    fi
-    echo "[*] Using rEFInd bootloader with with $KERNEL_FLAVOR"
-    echo "[*] From /edge/testing repos experimental..."
-elif [ "$BOOTLOADER" = "grub" ]; then
-    echo "[*] Using GRUB bootloader with $KERNEL_FLAVOR"
-    BOOT_PACKAGES="grub grub-efi"
-else
-    echo "Error: Invalid BOOTLOADER setting: $BOOTLOADER"
-    echo "Valid options are: grub, refind"
-    exit 1
-fi
+echo "[*] Using GRUB bootloader with $KERNEL_FLAVOR"
+BOOT_PACKAGES="grub grub-efi"
 
 # Install packages and bootloader
 echo "[*] Running main chroot script..."
@@ -229,7 +213,6 @@ apk upgrade -a
 [ -n "$CORE_PACKAGES" ] && apk add $CORE_PACKAGES
 [ -n "$CORE_PACKAGES2" ] && apk add $CORE_PACKAGES2
 apk add $BOOT_PACKAGES
-[ "$BOOTLOADER" = "refind" ] && apk add refind@testing
 apk add $SYSTEM_PACKAGES
 [ -n "$DEV_PACKAGES" ] && apk add $DEV_PACKAGES
 apk add $EXTRA_PACKAGES
@@ -342,7 +325,13 @@ LOCALECONF
 
 CHROOT_CMD
 
-# Get partition UUID (needed for both bootloaders)
+echo "[*] Setting hostname and DNS..."
+echo "$HOSTNAME" > /mnt/alpine-img/etc/hostname
+# Overwrite the host-leaked resolv.conf (used during chroot apk) with the
+# configured fallback nameserver.
+echo "nameserver $DNS_FALLBACK" > /mnt/alpine-img/etc/resolv.conf
+
+# Get partition UUID for GRUB
 PART_UUID=$(blkid -s UUID -o value "$PART_DEV")
 
 # Build kernel cmdline based on filesystem type
@@ -394,12 +383,9 @@ else
     echo "[*] No microcode image found (skipping)"
 fi
 
-# Install and configure bootloader based on selection
-if [ "$BOOTLOADER" = "grub" ]; then
-    echo "[*] Installing GRUB bootloader..."
-
-    # Install GRUB inside chroot
-    chroot /mnt/alpine-img /bin/sh <<GRUB_INSTALL
+# Install and configure GRUB
+echo "[*] Installing GRUB bootloader..."
+chroot /mnt/alpine-img /bin/sh <<GRUB_INSTALL
 . /root/.profile || true
 grub-install --target=x86_64-efi --efi-directory=/efi \
              --boot-directory=/efi --bootloader-id=Alpine \
@@ -408,10 +394,9 @@ grub-install --target=x86_64-efi --efi-directory=/efi \
              --recheck
 GRUB_INSTALL
 
-    # Generate GRUB config
-    echo "[*] Generating GRUB configuration..."
-    if [ -n "$UCODE_FILE" ]; then
-        cat > /mnt/alpine-img/efi/grub/grub.cfg <<GRUBCFG
+echo "[*] Generating GRUB configuration..."
+if [ -n "$UCODE_FILE" ]; then
+    cat > /mnt/alpine-img/efi/grub/grub.cfg <<GRUBCFG
 set timeout=$GRUB_TIMEOUT
 set default=0
 
@@ -420,8 +405,8 @@ menuentry "$MENUENTRY" {
     initrd $UCODE_FILE /$INITRAMFS_FILE
 }
 GRUBCFG
-    else
-        cat > /mnt/alpine-img/efi/grub/grub.cfg <<GRUBCFG
+else
+    cat > /mnt/alpine-img/efi/grub/grub.cfg <<GRUBCFG
 set timeout=$GRUB_TIMEOUT
 set default=0
 
@@ -430,88 +415,10 @@ menuentry "$MENUENTRY" {
     initrd /$INITRAMFS_FILE
 }
 GRUBCFG
-    fi
-
-
-elif [ "$BOOTLOADER" = "refind" ]; then
-    echo "[*] Installing rEFInd bootloader..."
-
-    # Manually install rEFInd (refind-install has issues with pre-mounted ESP in chroot)
-    echo "[*] Creating rEFInd directory structure..."
-    mkdir -p /mnt/alpine-img/efi/EFI/refind
-    mkdir -p /mnt/alpine-img/efi/EFI/BOOT
-
-    # Copy rEFInd binaries
-    echo "[*] Copying rEFInd binaries..."
-    if [ -f /mnt/alpine-img/usr/share/refind/refind_x64.efi ]; then
-        cp /mnt/alpine-img/usr/share/refind/refind_x64.efi /mnt/alpine-img/efi/EFI/refind/
-        cp /mnt/alpine-img/usr/share/refind/refind_x64.efi /mnt/alpine-img/efi/EFI/BOOT/bootx64.efi
-    else
-        echo "Error: rEFInd binary not found in /usr/share/refind/"
-        exit 1
-    fi
-
-    # Copy icons if they exist
-    if [ -d /mnt/alpine-img/usr/share/refind/icons ]; then
-        echo "[*] Copying rEFInd icons..."
-        cp -r /mnt/alpine-img/usr/share/refind/icons /mnt/alpine-img/efi/EFI/refind/
-    fi
-
-    # Copy btrfs driver if using btrfs filesystem
-    if [ "$ROOT_FS_TYPE" = "btrfs" ]; then
-        echo "[*] Copying Btrfs driver for rEFInd..."
-        if [ -f /mnt/alpine-img/usr/share/refind/drivers_x86_64/btrfs_x64.efi ]; then
-            mkdir -p /mnt/alpine-img/efi/EFI/refind/drivers_x64
-            cp /mnt/alpine-img/usr/share/refind/drivers_x86_64/btrfs_x64.efi \
-               /mnt/alpine-img/efi/EFI/refind/drivers_x64/
-        fi
-    fi
-
-    # Generate rEFInd configuration
-    echo "[*] Generating rEFInd configuration..."
-    if [ -n "$UCODE_FILE" ]; then
-        cat > /mnt/alpine-img/efi/EFI/refind/refind.conf <<REFINDCFG
-timeout $REFIND_TIMEOUT
-resolution $REFIND_RESOLUTION
-use_graphics_for linux
-
-menuentry "$MENUENTRY" {
-    icon     /EFI/refind/icons/os_linux.png
-    loader   /$KERNEL_FILE
-    initrd   $UCODE_FILE
-    initrd   /$INITRAMFS_FILE
-    options  "root=UUID=$PART_UUID $KERNEL_CMDLINE"
-}
-REFINDCFG
-    else
-        cat > /mnt/alpine-img/efi/EFI/refind/refind.conf <<REFINDCFG
-timeout $REFIND_TIMEOUT
-resolution $REFIND_RESOLUTION
-use_graphics_for linux
-
-menuentry "$MENUENTRY" {
-    icon     /EFI/refind/icons/os_linux.png
-    loader   /$KERNEL_FILE
-    initrd   /$INITRAMFS_FILE
-    options  "root=UUID=$PART_UUID $KERNEL_CMDLINE"
-}
-REFINDCFG
-    fi
-
-    # Create refind_linux.conf in the EFI partition root
-    echo "[*] Creating refind_linux.conf..."
-    cat > /mnt/alpine-img/efi/refind_linux.conf <<REFINDLINUX
-"Boot with standard options" "root=UUID=$PART_UUID $KERNEL_CMDLINE"
-"Boot to single-user mode" "root=UUID=$PART_UUID $KERNEL_CMDLINE single"
-"Boot with minimal options" "root=UUID=$PART_UUID ro"
-REFINDLINUX
 fi
 
 echo "[*] Unmouting EFI..."
 umount /mnt/alpine-img/efi
-
-echo "[*] Setting hostname..."
-echo "$HOSTNAME" > /mnt/alpine-img/etc/hostname
 
 # Set root password in chroot
 echo "[*] Setting root password..."
@@ -544,9 +451,33 @@ UUID=$EFI_UUID /efi vfat defaults 0 2
 tmpfs /tmp tmpfs defaults,nodev,nosuid 0 0
 EOF
 
-# Overwrite the host-leaked resolv.conf (used during chroot apk) with the
-# configured fallback nameserver.
-echo "nameserver $DNS_FALLBACK" > /mnt/alpine-img/etc/resolv.conf
+if [ -n "$USER" ]; then
+echo "[*] Setting up dotfiles..."
+chroot /mnt/alpine-img /bin/sh <<DOTS_CMD
+. /root/.profile || true
+echo "[MOD] Setting up Sway..."
+setup-desktop sway
+
+echo "[MOD] Setting up dotfiles..."
+mkdir -p /home/"$USER"/.config/sway
+
+git clone --depth 1 https://github.com/h8d13/swaydots /home/"$USER"/.swaydots
+cd /home/"$USER"/.swaydots && ./linker.sh "$USER"
+
+echo "[MOD] Resetting perms..."
+chown -R "$USER":"$USER" "/home/$USER/"
+
+# Add user to required groups
+echo "[MOD] Adding $USER to groups: input, video, seat, audio..."
+for group in input video seat audio; do
+    # Create group if it doesn't exist
+    if ! getent group "\$group" >/dev/null 2>&1; then
+        addgroup "\$group"
+    fi
+    adduser "$USER" "\$group"
+done
+DOTS_CMD
+fi
 
 # Cleanup
 echo "[*] Unmouting dev/pts/sys/proc..."
@@ -572,7 +503,7 @@ if [ "$DIRECT_WRITE" = "1" ]; then
 else
     echo "Image: $IMAGE_FILE Size: $IMAGE_SIZE"
 fi
-echo "Boot mode: UEFI : $BOOTLOADER"
+echo "Boot mode: UEFI : grub"
 echo "System hostname: $HOSTNAME"
 echo "Root password: $ROOT_PASSWORD"
 if [ -n "$USER" ]; then
