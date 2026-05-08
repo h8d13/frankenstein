@@ -5,5 +5,6 @@ This means being able to re-install from scratch in 15 minutes.
 
 Usage:
 
-sudo ./ALPM-FS/run.sh --reset private
+sudo ./ALPM-FS/run.sh --reset private 
+do something if needed, then 'exit'
 sudo ./create_img /dev/sdX
