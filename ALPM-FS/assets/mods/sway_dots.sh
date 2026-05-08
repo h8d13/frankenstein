@@ -11,8 +11,8 @@ setup-desktop sway
 echo "[MOD] Setting up dotfiles..."
 mkdir -p /home/"$USER"/.config/sway
 
-git clone --depth 1 https://github.com/h8d13/swaydots /home/"$USER"/.swaydots
-cd .swaydots && ./linker.sh
+git clone --depth 1 https://github.com/h8d13/swaydots 
+cd /home/"$USER"/.swaydots && ./linker.sh
 
 echo "[MOD] Resetting perms..."
 chown -R "$USER":"$USER" "/home/$USER/"
