@@ -234,6 +234,7 @@ apk add $SYSTEM_PACKAGES
 [ -n "$DEV_PACKAGES" ] && apk add $DEV_PACKAGES
 apk add $EXTRA_PACKAGES
 [ "$WIFI_NEEDED" = "yes" ] && [ -n "$WIFI_PACKAGES" ] && apk add $WIFI_PACKAGES
+[ "$SOUND_NEEDED" = "yes" ] && [ -n "$SOUND_PACKAGES" ] && apk add $SOUND_PACKAGES
 [ -n "$NTH_PACKAGES" ] && apk add $NTH_PACKAGES
 [ -n "$HW_GROUP_INTEL" ] && apk add $HW_GROUP_INTEL
 [ -n "$HW_GROUP_AMD" ] && apk add $HW_GROUP_AMD
@@ -264,6 +265,13 @@ done
 # Add WiFi services if enabled
 if [ "$WIFI_NEEDED" = "yes" ] && [ -n "$SERVICES_DEFAULT_WIFI" ]; then
     for service in $SERVICES_DEFAULT_WIFI; do
+        rc-update add \$service default
+    done
+fi
+
+# Add Sound services if enabled
+if [ "$SOUND_NEEDED" = "yes" ] && [ -n "$SERVICES_DEFAULT_SOUND" ]; then
+    for service in $SERVICES_DEFAULT_SOUND; do
         rc-update add \$service default
     done
 fi

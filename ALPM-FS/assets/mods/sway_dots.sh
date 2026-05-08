@@ -8,11 +8,14 @@ USER="${DOAS_USER:-$1}"
 echo "[MOD] Setting up Sway..."
 setup-desktop sway
 
-echo "[MOD] Copying default sway files..."
+echo "[MOD] Setting up dotfiles..."
 mkdir -p /home/"$USER"/.config/sway
-cp /etc/sway/config /home/"$USER"/.config/sway/
 
-chown -R "$USER":"$USER" "/home/$USER/.config"
+git clone --depth 1 https://github.com/h8d13/swaydots /home/"$USER"/.swaydots
+cd .swaydots && ./linker.sh
+
+echo "[MOD] Resetting perms..."
+chown -R "$USER":"$USER" "/home/$USER/"
 
 # Add user to required groups
 echo "[MOD] Adding $USER to groups: input, video, seat, audio..."
@@ -23,6 +26,3 @@ for group in input video seat audio; do
     fi
     adduser "$USER" "$group"
 done
-
-apk add alsaconf alsa-utils sof-firmware
-rc-update add alsa

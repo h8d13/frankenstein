@@ -39,7 +39,7 @@ cp "$MODS_DIR/welcome.sh" "$PRO_D_DIR/welcome.sh" && chmod +x "$PRO_D_DIR/welcom
 cp "$MODS_DIR/version.sh" "$PRO_D_DIR/version.sh" && chmod +x "$PRO_D_DIR/version.sh"
 
 mkdir -p "$ROOT_DIR/mods"
-cp "$MODS_DIR/sway_user.sh" "$ROOT_DIR/mods/sway_user.sh" && chmod +x "$ROOT_DIR/mods/sway_user.sh"
+cp "$MODS_DIR/sway_dots.sh" "$ROOT_DIR/mods/sway_dots.sh" && chmod +x "$ROOT_DIR/mods/sway_dots.sh"
 
 # Enter chroot as login
 echo "[+] Entering Alpine chroot environment..."

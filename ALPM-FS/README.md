@@ -104,8 +104,6 @@ Finally they also have helpers for `setup-desktop <desktop>` and `setup-wayland-
 I would not recommend gnome as it's going to be a past version since ver48 introduced dependencies on systemd.
 Plasma works beautifully with sound of the box!
 
-I've also included a Sway setup script where you can simple `su <user>` then go to `doas ./root/mods/sway_user.sh`. Probably also recommended to install something like SDDM or lightdm or similar (a firewall, etc). But I left it without and you can run `sway` as your user to start it.
-
 <details>
 <summary><b>More stuff</b></summary>
 
