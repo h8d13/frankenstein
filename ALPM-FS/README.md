@@ -7,14 +7,9 @@
 
 ----
 
-(Optional) build your kernel from the ground up: we'll give full control by starting at the smallest point possible.
-See [KernelComp](./PZSC031/FF)
-
 Coolest part of this project: Initial auto download is **3.3mb.** (Alpine [MiniRoot](https://alpinelinux.org/downloads/) FS) Extracted is < ~9mb, goal being a kind of TUI-os + turn it into a fully working system for bare-metal.
 
 And for the process to take **less than 30 seconds.** (Unless you compile kernel ofc.)
-
-Download the repo and extract or `git clone https://github.com/h8d13/ALPM-FS`
 
 ----
 
@@ -87,8 +82,6 @@ Either way, this:
 > **Default credentials:** root / alpine (change after first boot!)
 > Also need to run `apk update && apk upgrade` once you are in.
 
-TODO: Proper mgmnt of repos... Have no idea how they work :D
-
 -----
 
 ## Post base install
@@ -135,11 +128,7 @@ $ doas ufw allow out 80
 $ doas ufw default deny incoming
 ```
 
-</details>
-
-
->[!NOTE]
-> Also can be found in [.github](./.github) where I documented some of the tricks/ressources I've used.
+#### Flatpak
 
 ```
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -149,44 +138,6 @@ flatpak run io.github.nokse22.minitext
 Of course this is an example please install something more useful.
 Also `doas apk add gnome-2048` because always need that at hand.
 
-----
-
-<details>
-<summary><b>STATS</b></summary>
-
-### FOR NERDS
-
-#### Boot time
-
-[3.399605] Mounting root: ok. (Grub)
-
-
-#### Reference sizes
-
-VM Final size (using linux-virt): 87.5 MiB
-
-Final size (lts / mainline): 195 MiB
-
-With hardware drivers + mesa: 800 MiB
-
-Full Intel HW + Full MESA: 1.1GB
-
-#### Sway
-
-With 3 github pages open on FF and Sway: Memory: 2.09 GiB / 15.29 GiB (13.7%)
-
-At idle: 664.33 MiB  / 15.29 GiB (4.2%)
-
-And all I need to code: Packages: 637 (apk)
-
-#### Plasma
-
-Or full plasma install: 3.59 GiB (Disk Used Ext4) - 6.3.6
-
-At idle 1.30 GiB / 15.29 GiB (8.5%)
-
-(With VSCodium and some more stuff) on edge/testing: 4.76 GiB (Disk Used Ext4) - 6.5.3
-
 </details>
 
-
+----
