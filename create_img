@@ -304,12 +304,13 @@ IWDCONF
 # 	wifi.backend=wpa_supplicant
 # NMCONF
 
-# Configure network interfaces for auto DHCP
+# Configure network interfaces.
+# lo is auto, eth0 is on-demand (laptop default uses wifi via iwd).
+# Bring eth0 up manually with `ifup eth0` (see swaydots ccable alias).
 cat > /etc/network/interfaces <<-NETCONF
 	auto lo
 	iface lo inet loopback
 
-	auto eth0
 	iface eth0 inet dhcp
 	    hostname \$HOSTNAME
 NETCONF
