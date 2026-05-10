@@ -263,11 +263,30 @@ if [ "$SOUND_NEEDED" = "yes" ] && [ -n "$SERVICES_DEFAULT_SOUND" ]; then
     done
 fi
 
-# Configure console keymap (read by openrc 'keymaps' service at boot).
+# Configure console keymap (read by openrc 'loadkmap' service at boot).
 # Sway/X get layout from their own xkb_layout, this is TTY-only.
-cat > /etc/conf.d/keymaps <<-KEYMAPS
-	keymap="$KB_LAYOUT"
-KEYMAPS
+# Resolve <layout>/<variant>.bmap from /usr/share/bkeymaps. Empty KB_VARIANT picks
+# the first variant available (matches setup-keymap behavior when count==1).
+mkdir -p /etc/keymap
+KB_DIR="/usr/share/bkeymaps/$KB_LAYOUT"
+KB_SRC=""
+if [ -d "\$KB_DIR" ]; then
+    if [ -n "$KB_VARIANT" ]; then
+        for f in "\$KB_DIR/$KB_VARIANT".bmap*; do
+            [ -f "\$f" ] && KB_SRC="\$f" && break
+        done
+    else
+        for f in "\$KB_DIR"/*.bmap*; do
+            [ -f "\$f" ] && KB_SRC="\$f" && break
+        done
+    fi
+fi
+if [ -n "\$KB_SRC" ]; then
+    cp "\$KB_SRC" /etc/keymap/
+    echo "KEYMAP=/etc/keymap/\$(basename \"\$KB_SRC\")" > /etc/conf.d/loadkmap
+else
+    echo "WARN: keymap $KB_LAYOUT${KB_VARIANT:+/$KB_VARIANT} not found in \$KB_DIR" >&2
+fi
 
 # Configure zram for swap
 cat > /etc/conf.d/zram-init <<-ZRAMCONF

@@ -8,3 +8,7 @@ Usage:
 sudo ./ALPM-FS/run.sh --reset private 
 do something if needed, then 'exit'
 sudo ./create_img /dev/sdX
+
+Resources:
+https://gitlab.alpinelinux.org/alpine/alpine-conf
+
